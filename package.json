@@ -1,0 +1,25 @@
+{
+  "name": "cantine-medusa-backend",
+  "version": "1.0.0",
+  "description": "La Cantine Africaine — Medusa v2 backend with custom modules",
+  "scripts": {
+    "dev": "medusa develop",
+    "start": "medusa start",
+    "build": "medusa build",
+    "db:generate": "medusa db:generate",
+    "db:migrate": "medusa db:migrate"
+  },
+  "dependencies": {
+    "@medusajs/framework": "latest",
+    "@medusajs/medusa": "latest",
+    "@medusajs/medusa-cli": "latest",
+    "axios": "^1.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
