@@ -9,7 +9,7 @@ export default defineMiddlewares({
     { matcher: "/admin/addons*", middlewares: [authenticate("user", ["session", "bearer", "api-key"])] },
     { matcher: "/admin/delivery-zones*", middlewares: [authenticate("user", ["session", "bearer", "api-key"])] },
     // Store routes — require customer auth
-    { matcher: "/store/loyalty/me*", middlewares: [authenticate("customer", ["session", "bearer"])] },
+    { matcher: "/store/loyalty*", middlewares: [authenticate("customer", ["session", "bearer"])] },
     { matcher: "/store/wallet*", middlewares: [authenticate("customer", ["session", "bearer"])] },
     { matcher: "/store/credit*", middlewares: [authenticate("customer", ["session", "bearer"])] },
     // Public store routes — no auth needed

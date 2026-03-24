@@ -24,8 +24,11 @@ export class CarteCantineProvider extends AbstractPaymentProvider<Options> {
   }
 
   async capturePayment(input: any): Promise<any> {
-    const walletService = this.container_.resolve("walletModuleService") as any
     const customerId = input.data?.customer_id
+    if (!customerId) {
+      return { data: { ...input.data, error: "Missing customer_id" } }
+    }
+    const walletService = this.container_.resolve("walletModuleService") as any
     const amount = input.data?.authorized_amount || input.amount
 
     await walletService.spend(customerId, amount, input.data?.order_id || "unknown")

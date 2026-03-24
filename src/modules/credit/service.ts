@@ -38,7 +38,7 @@ export default class CreditModuleService extends MedusaService({
       balance_after: newBalance,
     })
 
-    await this.updateCustomerCredits(credit.id, {
+    await this.updateCustomerCredits({ id: credit.id,
       credit_balance: newBalance,
     })
 
@@ -66,7 +66,7 @@ export default class CreditModuleService extends MedusaService({
         balance_after: newBalance,
       })
 
-      await this.updateCustomerCredits(credit.id, {
+      await this.updateCustomerCredits({ id: credit.id,
         credit_balance: newBalance,
       })
     }

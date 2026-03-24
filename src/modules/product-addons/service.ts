@@ -14,7 +14,7 @@ export default class AddonModuleService extends MedusaService({
 
     if (categoryIds.length === 0) return []
 
-    const categories = await this.listAddonCategorys(
+    const categories = await this.listAddonCategories(
       { id: categoryIds },
       { order: { display_order: "ASC" } }
     )

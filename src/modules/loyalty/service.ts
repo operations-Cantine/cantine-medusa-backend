@@ -20,7 +20,7 @@ export default class LoyaltyModuleService extends MedusaService({
   }
 
   async getOrCreateCustomerLoyalty(customerId: string) {
-    const existing = await this.listCustomerLoyaltys({
+    const existing = await this.listCustomerLoyalties({
       customer_id: customerId,
     })
     if (existing.length > 0) return existing[0]
@@ -28,7 +28,7 @@ export default class LoyaltyModuleService extends MedusaService({
     const tiers = await this.listLoyaltyTiers({ name: "Membre" })
     const defaultTier = tiers[0]
 
-    return await this.createCustomerLoyaltys({
+    return await this.createCustomerLoyalties({
       customer_id: customerId,
       current_points: 0,
       lifetime_points: 0,
@@ -47,7 +47,7 @@ export default class LoyaltyModuleService extends MedusaService({
       ? await this.retrieveLoyaltyTier(loyalty.tier_id)
       : null
 
-    await this.createLoyaltyPointss({
+    await this.createLoyaltyPoints({
       customer_id: customerId,
       points,
       reason,
@@ -58,7 +58,7 @@ export default class LoyaltyModuleService extends MedusaService({
     const newPoints = loyalty.current_points + points
     const newLifetime = loyalty.lifetime_points + points
 
-    await this.updateCustomerLoyaltys(loyalty.id, {
+    await this.updateCustomerLoyalties({ id: loyalty.id,
       current_points: newPoints,
       lifetime_points: newLifetime,
       last_points_at: new Date(),
@@ -73,13 +73,13 @@ export default class LoyaltyModuleService extends MedusaService({
     const loyalty = await this.getOrCreateCustomerLoyalty(customerId)
     const newPoints = Math.max(0, loyalty.current_points - points)
 
-    await this.createLoyaltyPointss({
+    await this.createLoyaltyPoints({
       customer_id: customerId,
       points: -points,
       reason,
     })
 
-    await this.updateCustomerLoyaltys(loyalty.id, {
+    await this.updateCustomerLoyalties({ id: loyalty.id,
       current_points: newPoints,
     })
 
@@ -116,8 +116,14 @@ export default class LoyaltyModuleService extends MedusaService({
       }
     }
 
-    if (newTier && newTier.id !== loyalty.tier_id) {
-      await this.updateCustomerLoyaltys(loyalty.id, {
+    // Only upgrade, never downgrade
+    const currentTier = loyalty.tier_id
+      ? await this.retrieveLoyaltyTier(loyalty.tier_id)
+      : null
+    const isUpgrade = !currentTier || newTier.min_points > currentTier.min_points
+
+    if (newTier && newTier.id !== loyalty.tier_id && isUpgrade) {
+      await this.updateCustomerLoyalties({ id: loyalty.id,
         tier_id: newTier.id,
       })
       this.logger_.info(

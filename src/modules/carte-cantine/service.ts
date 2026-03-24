@@ -58,21 +58,24 @@ export default class WalletModuleService extends MedusaService({
     const wallet = await this.getOrCreateWallet(customerId)
     if (wallet.status !== "active") throw new Error("Wallet is frozen or suspended")
 
-    // Auto-repay credit debt first
+    let runningBalance = wallet.balance
     let actualDeposit = amount
     let creditRepaid = 0
+
+    // Auto-repay credit debt first
     if (this.creditService_) {
       const repayResult = await this.creditService_.autoRepayFromDeposit(customerId, amount)
       creditRepaid = repayResult.creditRepaid
       actualDeposit = repayResult.remainingForWallet
 
       if (creditRepaid > 0) {
+        // Credit repayment doesn't change wallet balance — money goes to debt
         await this.createWalletTransactions({
           wallet_id: wallet.id,
           customer_id: customerId,
           type: "credit_repayment",
           amount: -creditRepaid,
-          balance_after: wallet.balance,
+          balance_after: runningBalance,
           source: "credit_repayment",
           reference,
           description: `Credit repayment of ${creditRepaid} FCFA from deposit`,
@@ -80,18 +83,27 @@ export default class WalletModuleService extends MedusaService({
       }
     }
 
-    // Apply bonus on remaining deposit
+    // Check MAX_BALANCE cap before adding
     const bonus = Math.floor(actualDeposit * DEFAULT_BONUS_PCT / 100)
     const totalToAdd = actualDeposit + bonus
-    const newBalance = Math.min(wallet.balance + totalToAdd, MAX_BALANCE)
+    const cappedTotal = Math.min(totalToAdd, MAX_BALANCE - runningBalance)
 
-    // Record deposit
+    if (cappedTotal <= 0) {
+      throw new Error(`Wallet balance would exceed maximum of ${MAX_BALANCE} FCFA`)
+    }
+
+    // Proportionally reduce deposit and bonus if capped
+    const cappedDeposit = cappedTotal === totalToAdd ? actualDeposit : Math.min(actualDeposit, cappedTotal)
+    const cappedBonus = cappedTotal - cappedDeposit
+
+    // Record deposit transaction
+    runningBalance += cappedDeposit
     await this.createWalletTransactions({
       wallet_id: wallet.id,
       customer_id: customerId,
       type: "deposit",
-      amount: actualDeposit,
-      balance_after: wallet.balance + actualDeposit,
+      amount: cappedDeposit,
+      balance_after: runningBalance,
       source,
       reference,
       description: creditRepaid > 0
@@ -99,26 +111,28 @@ export default class WalletModuleService extends MedusaService({
         : null,
     })
 
-    // Record bonus
-    if (bonus > 0) {
+    // Record bonus transaction
+    if (cappedBonus > 0) {
+      runningBalance += cappedBonus
       await this.createWalletTransactions({
         wallet_id: wallet.id,
         customer_id: customerId,
         type: "bonus",
-        amount: bonus,
-        balance_after: newBalance,
+        amount: cappedBonus,
+        balance_after: runningBalance,
         source: "system",
         description: `${DEFAULT_BONUS_PCT}% deposit bonus`,
       })
     }
 
-    await this.updateWallets(wallet.id, { balance: newBalance })
+    await this.updateWallets({ id: wallet.id, balance: runningBalance })
 
     return {
-      balance: newBalance,
-      deposited: actualDeposit,
-      bonus,
+      balance: runningBalance,
+      deposited: cappedDeposit,
+      bonus: cappedBonus,
       credit_repaid: creditRepaid,
+      capped: cappedTotal < totalToAdd,
     }
   }
 
@@ -145,7 +159,7 @@ export default class WalletModuleService extends MedusaService({
       description,
     })
 
-    await this.updateWallets(wallet.id, { balance: newBalance })
+    await this.updateWallets({ id: wallet.id, balance: newBalance })
     return { balance: newBalance }
   }
 
@@ -169,7 +183,7 @@ export default class WalletModuleService extends MedusaService({
       description: description || "Order refund",
     })
 
-    await this.updateWallets(wallet.id, { balance: newBalance })
+    await this.updateWallets({ id: wallet.id, balance: newBalance })
     return { balance: newBalance }
   }
 
@@ -182,13 +196,13 @@ export default class WalletModuleService extends MedusaService({
 
   async freezeWallet(customerId: string) {
     const wallet = await this.getOrCreateWallet(customerId)
-    await this.updateWallets(wallet.id, { status: "frozen" })
+    await this.updateWallets({ id: wallet.id, status: "frozen" })
     return { status: "frozen" }
   }
 
   async unfreezeWallet(customerId: string) {
     const wallet = await this.getOrCreateWallet(customerId)
-    await this.updateWallets(wallet.id, { status: "active" })
+    await this.updateWallets({ id: wallet.id, status: "active" })
     return { status: "active" }
   }
 }
