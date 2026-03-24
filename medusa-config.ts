@@ -5,9 +5,9 @@ export default defineConfig({
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,
     http: {
-      storeCors: process.env.STORE_CORS || "http://localhost:8000",
-      adminCors: process.env.ADMIN_CORS || "http://localhost:9000",
-      authCors: process.env.AUTH_CORS || "http://localhost:8000,http://localhost:9000",
+      storeCors: process.env.STORE_CORS || "https://cantine-storefront.vercel.app,https://cantine-pos.vercel.app,http://localhost:8000,http://localhost:3001",
+      adminCors: process.env.ADMIN_CORS || "https://cantine-restaurant.medusajs.app,http://localhost:9000",
+      authCors: process.env.AUTH_CORS || "https://cantine-storefront.vercel.app,https://cantine-pos.vercel.app,https://cantine-restaurant.medusajs.app,http://localhost:8000,http://localhost:9000",
     },
   },
   modules: [
