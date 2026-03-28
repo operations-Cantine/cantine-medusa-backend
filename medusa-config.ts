@@ -30,5 +30,16 @@ export default defineConfig({
     { resolve: "./src/modules/credit" },
     { resolve: "./src/modules/product-addons" },
     { resolve: "./src/modules/delivery-zones" },
+    // Sanity CMS — auto-syncs products when created or updated in Medusa
+    {
+      resolve: "./src/modules/sanity",
+      options: {
+        api_token: process.env.SANITY_API_TOKEN,
+        project_id: process.env.SANITY_PROJECT_ID || "7ory909q",
+        api_version: process.env.SANITY_API_VERSION || "2024-01-01",
+        dataset: (process.env.SANITY_DATASET as "production" | "development") || "production",
+        studio_url: process.env.SANITY_STUDIO_URL,
+      },
+    },
   ],
 })
